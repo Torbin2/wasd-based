@@ -1,2 +1,2 @@
-4 keys to move
-´rshift´ to atack
+4 keys to move\n
+´shift´ to atack
