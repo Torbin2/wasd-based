@@ -1,1 +1,1 @@
-wasd to move
+4 keys to move
