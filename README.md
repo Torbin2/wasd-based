@@ -1,3 +1,5 @@
+# Wasd-based
+
 4 keys to move
 
-'shift' to atack
+`shift` to attack
