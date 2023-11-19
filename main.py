@@ -1,7 +1,7 @@
 import pygame
 from sys import exit
 
-screen = pygame.display.set_mode((400,400))
+screen = pygame.display.set_mode((1200,600))
 pygame.display.set_caption("bullet based")
 clock = pygame.time.Clock()
 
@@ -40,14 +40,14 @@ class player():
         if keys[pygame.K_RSHIFT] and self.atacking_frames <=20:
             self.atacking = True
     def side_colisions(self):
-        if self.player_rect.right > 400:
-            self.player_rect.right = 400
+        if self.player_rect.right > 1200:
+            self.player_rect.right = 1200
             self.x_speed =0
         if self.player_rect.left < 0:
             self.player_rect.left = 0
             self.x_speed =0
-        if self.player_rect.bottom > 400:
-            self.player_rect.bottom = 400
+        if self.player_rect.bottom > 600:
+            self.player_rect.bottom = 600
             self.y_speed = 0
         if self.player_rect.top < 0:
             self.player_rect.top = 0 
@@ -83,8 +83,8 @@ class player():
             
             self.colour =("#cde4b1")
         else: 
-            weopon_rect.center = -100,-100
-            if self.atacking_frames >= 60:
+            weopon_rect.center = -200,-200
+            if self.atacking_frames >= 30:
                 self.atacking_frames = 0
                 self.colour = ("#9ac963")
                 self.atacking = False
@@ -135,10 +135,15 @@ class enemy():
             factor = abs_x/abs_y
             self.x_speed = self.speed *factor
             self.y_speed = self.speed - self.x_speed
+
+    def colision(self):
+        if self.rect.colliderect(weopon_rect):
+            self.rect.center = (0,0)
     def draw(self):
         pygame.draw.circle(screen,self.colour,self.rect.center,self.radius)   
     def update(self):
         self.movement()
+        self.colision()
         self.draw()
 
 
