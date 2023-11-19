@@ -14,7 +14,7 @@ class player():
         self.y_speed = 0
         self.atacking = False
         self.atacking_frames =0
-        self.colour = ("blue")
+        self.colour = ("#9ac963")
         self.direction = 1
     def input(self):
         keys = pygame.key.get_pressed()        
@@ -81,12 +81,12 @@ class player():
             elif self.direction == 8:
                 weopon_rect.bottomright = self.player_rect.topleft
             
-            self.colour =("light blue")
+            self.colour =("#cde4b1")
         else: 
             weopon_rect.center = -100,-100
             if self.atacking_frames >= 60:
                 self.atacking_frames = 0
-                self.colour = ("blue")
+                self.colour = ("#9ac963")
                 self.atacking = False
             
     def draw(self):
@@ -101,20 +101,58 @@ class player():
         self.draw()
 player_class = player()
 class enemy():
-    def __init__(self):
-        self.center = (200,200)
-        self.radius = 5
+    def __init__(self, type):
+        self.rect = pygame.Rect(0,0,200,200)
+        self.radius = 10
+        if type == "basic":
+            self.speed = 5
+            self.colour = ("#395974")
+        if type == "speedy":
+            self.speed = 10
+            self.colour = ("#743959")
+
+    def movement(self):
+        self.pos_to_player()
+        if self.y_delta >0: self.rect.y += self.y_speed
+        else: self.rect.y -= self.y_speed
+        if self.x_delta >0: self.rect.x += self.x_speed
+        else: self.rect.x -= self.x_speed
+
+    def pos_to_player(self):
+        self.y_delta = player_class.player_rect.centery - self.rect.centery
+        self.x_delta = player_class.player_rect.centerx - self.rect.centerx
+        
+        abs_x = abs(self.x_delta)
+        abs_y = abs(self.y_delta)
+        if abs_x == 0: abs_x = 0.1
+        if abs_y == 0: abs_y = 0.1
+        
+        if abs_x >= abs_y:
+            factor = abs_y/abs_x
+            self.y_speed = self.speed *factor
+            self.x_speed = self.speed - self.y_speed
+        if abs_y > abs_x:
+            factor = abs_x/abs_y
+            self.x_speed = self.speed *factor
+            self.y_speed = self.speed - self.x_speed
     def draw(self):
-        pygame.draw.circle(screen,("red"),self.center,self.radius)
-enemy_1 = enemy()
+        pygame.draw.circle(screen,self.colour,self.rect.center,self.radius)   
+    def update(self):
+        self.movement()
+        self.draw()
+
+
+enemy_1 = enemy("basic")
+enemy_2 = enemy("speedy")
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
-    screen.fill(("#70a5d7"))
-    enemy_1.draw()
+    screen.fill(("#597439"))
+    enemy_1.update()
+    enemy_2.update()
     player_class.update()
 
     pygame.display.update()
