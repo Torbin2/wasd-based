@@ -186,7 +186,6 @@ def create_enemy():
         else: pos[0] = 1200
 
     enemy = 1
-    print(tuple(pos))
     if random == 1: enemy = 2
     elif random == 2: enemy =3
     enemies.append(Enemy(enemy,tuple(pos)))
