@@ -1,11 +1,17 @@
 import pygame
 from sys import exit
+from random import randint
 
 screen = pygame.display.set_mode((1200,600))
 pygame.display.set_caption("bullet based")
 clock = pygame.time.Clock()
+scuffed_timer = 0
 
 weopon_rect = pygame.Rect(-100,-100,50,50)
+
+bullets = []
+enemies = []
+
 
 class player():
     def __init__(self):
@@ -36,9 +42,12 @@ class player():
             elif self.direction == 7:self.direction = 8
             else:self.direction=1
 
-
         if keys[pygame.K_RSHIFT] and self.atacking_frames <=20:
             self.atacking = True
+        
+        if keys[pygame.K_RETURN]:
+            bullets.append(Bullet(self.direction))
+    
     def side_colisions(self):
         if self.player_rect.right > 1200:
             self.player_rect.right = 1200
@@ -52,6 +61,7 @@ class player():
         if self.player_rect.top < 0:
             self.player_rect.top = 0 
             self.y_speed = 0
+    
     def movement(self):
         self.player_rect.x += self.x_speed
         self.player_rect.y += self.y_speed
@@ -87,8 +97,7 @@ class player():
             if self.atacking_frames >= 30:
                 self.atacking_frames = 0
                 self.colour = ("#9ac963")
-                self.atacking = False
-            
+                self.atacking = False           
     def draw(self):
         pygame.draw.rect(screen,self.colour,self.player_rect)
         if self.atacking:
@@ -99,10 +108,12 @@ class player():
         self.side_colisions()
         self.weopon_logic()
         self.draw()
+
 player_class = player()
-class enemy():
+
+class Enemy():
     def __init__(self, type):
-        self.rect = pygame.Rect(0,0,200,200)
+        self.rect = pygame.Rect(0,0,20,20)
         self.radius = 10
         if type == "basic":
             self.speed = 5
@@ -110,6 +121,11 @@ class enemy():
         if type == "speedy":
             self.speed = 10
             self.colour = ("#743959")
+        if type == "big":
+            self.speed = 3
+            self.colour = ("#395974")
+            self.radius = 20
+
 
     def movement(self):
         self.pos_to_player()
@@ -117,7 +133,7 @@ class enemy():
         else: self.rect.y -= self.y_speed
         if self.x_delta >0: self.rect.x += self.x_speed
         else: self.rect.x -= self.x_speed
-
+    
     def pos_to_player(self):
         self.y_delta = player_class.player_rect.centery - self.rect.centery
         self.x_delta = player_class.player_rect.centerx - self.rect.centerx
@@ -138,17 +154,67 @@ class enemy():
 
     def colision(self):
         if self.rect.colliderect(weopon_rect):
-            self.rect.center = (0,0)
+            return True
+        else: return False
+            
     def draw(self):
         pygame.draw.circle(screen,self.colour,self.rect.center,self.radius)   
     def update(self):
         self.movement()
-        self.colision()
+        #self.colision()
         self.draw()
 
+def create_enemy():
+    random = randint(1,5)
+    enemy = Enemy("basic")
+    if random == 1: enemy = Enemy("speedy")
+    elif random == 2: enemy =Enemy("big")
+    enemies.append(enemy)
 
-enemy_1 = enemy("basic")
-enemy_2 = enemy("speedy")
+class Bullet():
+    def __init__(self, direction):
+        if direction == 1 or direction ==5: angle = 90
+        elif direction == 2 or direction ==6: angle = 45
+        elif direction == 3 or direction ==7: angle = 0
+        elif direction == 4 or direction ==8: angle = 135
+
+        img = pygame.image.load("graphics/laser.png").convert_alpha()
+        self.img = pygame.transform.rotozoom(img,angle,0.5)
+
+        self.rect = self.img.get_rect()
+        self.direction = direction
+        self.rect.center = player_class.player_rect.center
+    def movement(self):
+        if self.direction == 1:self.rect.y-=20
+        if self.direction == 2:
+            self.rect.x+=10
+            self.rect.y-=10
+        if self.direction == 3:self.rect.x+=20
+        if self.direction == 4:
+            self.rect.x+=10
+            self.rect.y+=10
+        if self.direction == 5:self.rect.y+=20
+        if self.direction == 6:
+            self.rect.x-=10
+            self.rect.y+=10
+        if self.direction == 7:self.rect.x-=20
+        if self.direction == 8:
+            self.rect.x-=10
+            self.rect.y-=10
+    def update(self):
+        self.movement()
+        screen.blit(self.img,self.rect)
+    def colison(self,enemy):
+        if self.rect.colliderect(enemy.rect):
+            return True
+        else: return False
+    def offscreen(self) -> bool:
+        if self.rect.left > 1200:return True
+        elif self.rect.right < 0: return True
+        elif self.rect.top < 0: return True
+        elif self.rect.bottom > 600: return True
+        else: return False
+     
 
 while True:
     for event in pygame.event.get():
@@ -156,9 +222,29 @@ while True:
             pygame.quit()
             exit()
     screen.fill(("#597439"))
-    enemy_1.update()
-    enemy_2.update()
-    player_class.update()
+    scuffed_timer +=1
+    
+    if scuffed_timer == 30:
+        create_enemy()
+        scuffed_timer = 0
+    
+    player_class.update() 
+    
+    for e in enemies:
+        e.update()
+        if e.colision()== True:
+            enemies.remove(e)
+    
+    for b in bullets:
+        b.update()
+        if b.offscreen():
+            bullets.remove(b)
+        else:
+            for e in enemies:
+                if b.colison(e):
+                    enemies.remove(e)
+    
+
 
     pygame.display.update()
     clock.tick(30)
