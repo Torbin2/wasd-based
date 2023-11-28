@@ -42,11 +42,11 @@ class player():
             elif self.direction == 7:self.direction = 8
             else:self.direction=1
 
-        if keys[pygame.K_RSHIFT] and self.atacking_frames <=20:
+        if keys[pygame.K_RSHIFT] and not self.atacking:
             self.atacking = True
+
+        #adding bullets is in the event menu
         
-        if keys[pygame.K_RETURN]:
-            bullets.append(Bullet(self.direction))
     
     def side_colisions(self):
         if self.player_rect.right > 1200:
@@ -73,7 +73,7 @@ class player():
         global weopon_rect
         if self.atacking:
             self.atacking_frames +=1    
-        if self.atacking and self.atacking_frames <= 20:
+        if self.atacking and self.atacking_frames <= 40:
             if self.direction == 1:
                 weopon_rect.midbottom = self.player_rect.midtop
             elif self.direction == 2:
@@ -94,7 +94,7 @@ class player():
             self.colour =("#cde4b1")
         else: 
             weopon_rect.center = -200,-200
-            if self.atacking_frames >= 30:
+            if self.atacking_frames >= 45:
                 self.atacking_frames = 0
                 self.colour = ("#9ac963")
                 self.atacking = False           
@@ -112,19 +112,25 @@ class player():
 player_class = player()
 
 class Enemy():
-    def __init__(self, type):
-        self.rect = pygame.Rect(0,0,20,20)
-        self.radius = 10
-        if type == "basic":
+    def __init__(self, type, pos):
+        #base
+        if type == 1:
             self.speed = 5
             self.colour = ("#395974")
-        if type == "speedy":
+            self.radius = 10
+        #fast
+        if type == 2:
             self.speed = 10
             self.colour = ("#743959")
-        if type == "big":
+            self.radius = 12
+        #big
+        if type == 3:
             self.speed = 3
             self.colour = ("#395974")
             self.radius = 20
+
+        self.rect = pygame.Rect(0, 0, self.radius*2, self.radius*2)
+        self.rect.center = pos
 
 
     def movement(self):
@@ -165,11 +171,25 @@ class Enemy():
         self.draw()
 
 def create_enemy():
-    random = randint(1,5)
-    enemy = Enemy("basic")
-    if random == 1: enemy = Enemy("speedy")
-    elif random == 2: enemy =Enemy("big")
-    enemies.append(enemy)
+    random = randint(1,4)
+    pos =[0,0]
+    
+    if randint(1,2) == 1:
+        pos[0] = randint(0,1200)
+        if randint(1,2) == 1:
+            pos[1] = 0
+        else: pos[1] =600
+    else:
+        pos[1] = randint(0,600)
+        if randint(1,2) == 1:
+            pos[0] = 0
+        else: pos[0] = 1200
+
+    enemy = 1
+    print(tuple(pos))
+    if random == 1: enemy = 2
+    elif random == 2: enemy =3
+    enemies.append(Enemy(enemy,tuple(pos)))
 
 class Bullet():
     def __init__(self, direction):
@@ -203,16 +223,18 @@ class Bullet():
             self.rect.y-=10
     def update(self):
         self.movement()
+        pygame.draw.rect(screen,('black'),self.rect)
         screen.blit(self.img,self.rect)
+    
     def colison(self,enemy):
         if self.rect.colliderect(enemy.rect):
             return True
         else: return False
     def offscreen(self) -> bool:
-        if self.rect.left > 1200:return True
-        elif self.rect.right < 0: return True
-        elif self.rect.top < 0: return True
-        elif self.rect.bottom > 600: return True
+        if self.rect.left > 1250:return True
+        elif self.rect.right < -50: return True
+        elif self.rect.top < -50: return True
+        elif self.rect.bottom > 650: return True
         else: return False
      
 
@@ -221,6 +243,10 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                bullets.append(Bullet(player_class.direction))
+
     screen.fill(("#597439"))
     scuffed_timer +=1
     
