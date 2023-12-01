@@ -7,7 +7,11 @@ pygame.display.set_caption("bullet based")
 clock = pygame.time.Clock()
 scuffed_timer = 0
 
+energie = 300
+energie_bar =pygame.Rect(0,-0,energie,30)
 weopon_rect = pygame.Rect(-100,-100,50,50)
+
+death = False
 
 bullets = []
 enemies = []
@@ -159,9 +163,13 @@ class Enemy():
             self.y_speed = self.speed - self.x_speed
 
     def colision(self):
+        global death
+        if self.rect.colliderect(player_class.player_rect):
+            death = True
         if self.rect.colliderect(weopon_rect):
             return True
         else: return False
+        
             
     def draw(self):
         pygame.draw.circle(screen,self.colour,self.rect.center,self.radius)   
@@ -192,10 +200,20 @@ def create_enemy():
 
 class Bullet():
     def __init__(self, direction):
+        self.diagonal = False
         if direction == 1 or direction ==5: angle = 90
-        elif direction == 2 or direction ==6: angle = 45
+        elif direction == 2 or direction ==6:
+            angle = 45
+            self.diagonal = True
         elif direction == 3 or direction ==7: angle = 0
-        elif direction == 4 or direction ==8: angle = 135
+        elif direction == 4 or direction ==8:
+            angle = 135
+            self.diagonal = True
+        
+        if self.diagonal:
+            self.hitbox_1 = pygame.Rect(0,0,55,40)
+            self.hitbox_2 = pygame.Rect(0,0,55,40)
+
 
         img = pygame.image.load("graphics/laser.png").convert_alpha()
         self.img = pygame.transform.rotozoom(img,angle,0.5)
@@ -208,24 +226,36 @@ class Bullet():
         if self.direction == 2:
             self.rect.x+=10
             self.rect.y-=10
+            self.hitbox_1.topright = self.rect.topright
+            self.hitbox_2.bottomleft = self.rect.bottomleft
         if self.direction == 3:self.rect.x+=20
         if self.direction == 4:
             self.rect.x+=10
             self.rect.y+=10
+            self.hitbox_1.topleft = self.rect.topleft
+            self.hitbox_2.bottomright = self.rect.bottomright
         if self.direction == 5:self.rect.y+=20
         if self.direction == 6:
             self.rect.x-=10
             self.rect.y+=10
+            self.hitbox_1.topright = self.rect.topright
+            self.hitbox_2.bottomleft = self.rect.bottomleft
         if self.direction == 7:self.rect.x-=20
         if self.direction == 8:
             self.rect.x-=10
             self.rect.y-=10
+            self.hitbox_1.topleft = self.rect.topleft
+            self.hitbox_2.bottomright = self.rect.bottomright
     def update(self):
         self.movement()
-        pygame.draw.rect(screen,('black'),self.rect)
+        if self.diagonal:
+            pygame.draw.rect(screen,('black'),self.hitbox_1)
+            pygame.draw.rect(screen,('black'),self.hitbox_2)
+
         screen.blit(self.img,self.rect)
     
     def colison(self,enemy):
+        
         if self.rect.colliderect(enemy.rect):
             return True
         else: return False
@@ -236,40 +266,62 @@ class Bullet():
         elif self.rect.bottom > 650: return True
         else: return False
      
+def energie_logic():
+    global energie
+    if energie <300:
+        energie +=1
+    energie_bar.width = energie
+    energie_bar.bottomright = (1180,580)
+    pygame.draw.rect(screen,("#824464"),energie_bar,7,8)
+
+
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+    
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                bullets.append(Bullet(player_class.direction))
-
-    screen.fill(("#597439"))
-    scuffed_timer +=1
+            if not death:
+                if event.key == pygame.K_RETURN and energie >= 25:
+                    bullets.append(Bullet(player_class.direction))
+                    energie -= 50
+            if death:
+                if event.key == pygame.K_SPACE:
+                    death = False
+    if not death: 
+        screen.fill(("#597439"))
+        scuffed_timer +=1
+        
+        if scuffed_timer == 30:
+            create_enemy()
+            scuffed_timer = 0
+        
+        player_class.update()
+        
+        for e in enemies:
+            e.update()
+            #sword colision
+            if e.colision()== True:
+                enemies.remove(e)
+                energie+=15
+        
+        for b in bullets:
+            b.update()
+            if b.offscreen():
+                bullets.remove(b)
+            else:
+                for e in enemies:
+                    if b.colison(e):
+                        enemies.remove(e)
+        
+        energie_logic()
+    if death:
+        screen.fill("red")
+        enemies = []
     
-    if scuffed_timer == 30:
-        create_enemy()
-        scuffed_timer = 0
     
-    player_class.update() 
-    
-    for e in enemies:
-        e.update()
-        if e.colision()== True:
-            enemies.remove(e)
-    
-    for b in bullets:
-        b.update()
-        if b.offscreen():
-            bullets.remove(b)
-        else:
-            for e in enemies:
-                if b.colison(e):
-                    enemies.remove(e)
-    
-
 
     pygame.display.update()
     clock.tick(30)
