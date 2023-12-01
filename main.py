@@ -2,12 +2,17 @@ import pygame
 from sys import exit
 from random import randint
 
+pygame.init()
+
 screen = pygame.display.set_mode((1200,600))
 pygame.display.set_caption("bullet based")
 clock = pygame.time.Clock()
+font = pygame.font.Font(None, 36)
 scuffed_timer = 0
 
 energie = 300
+points = 0
+
 energie_bar =pygame.Rect(0,-0,energie,30)
 weopon_rect = pygame.Rect(-100,-100,50,50)
 
@@ -118,6 +123,7 @@ player_class = player()
 class Enemy():
     def __init__(self, type, pos):
         #base
+        self.type = type
         if type == 1:
             self.speed = 5
             self.colour = ("#395974")
@@ -135,7 +141,6 @@ class Enemy():
 
         self.rect = pygame.Rect(0, 0, self.radius*2, self.radius*2)
         self.rect.center = pos
-
 
     def movement(self):
         self.pos_to_player()
@@ -166,11 +171,12 @@ class Enemy():
         global death
         if self.rect.colliderect(player_class.player_rect):
             death = True
+        
         if self.rect.colliderect(weopon_rect):
+            points_distrubution(self.type)
             return True
         else: return False
-        
-            
+                   
     def draw(self):
         pygame.draw.circle(screen,self.colour,self.rect.center,self.radius)   
     def update(self):
@@ -248,9 +254,6 @@ class Bullet():
             self.hitbox_2.bottomright = self.rect.bottomright
     def update(self):
         self.movement()
-        if self.diagonal:
-            pygame.draw.rect(screen,('black'),self.hitbox_1)
-            pygame.draw.rect(screen,('black'),self.hitbox_2)
 
         screen.blit(self.img,self.rect)
     
@@ -274,7 +277,14 @@ def energie_logic():
     energie_bar.bottomright = (1180,580)
     pygame.draw.rect(screen,("#824464"),energie_bar,7,8)
 
-
+def points_distrubution(sort):
+    global points
+    if sort== 1:
+        points+=1
+    elif sort== 2:
+        points+=3
+    elif sort==3:
+        points +=2
 
 while True:
     for event in pygame.event.get():
@@ -290,6 +300,7 @@ while True:
             if death:
                 if event.key == pygame.K_SPACE:
                     death = False
+                    points = 0
     if not death: 
         screen.fill(("#597439"))
         scuffed_timer +=1
@@ -314,14 +325,26 @@ while True:
             else:
                 for e in enemies:
                     if b.colison(e):
+                        points_distrubution(e.type)
                         enemies.remove(e)
         
         energie_logic()
+    
+    
     if death:
-        screen.fill("red")
+        screen.fill("#0d8779")
+        
         enemies = []
+        bullets = []
+
+        text = font.render("press space",True, ("black"))
+        BLuk = text.get_rect(midtop= (600,450))
+        screen.blit(text,BLuk)
     
-    
+    #outside of death
+    text = font.render(str(points),True, ("black"))
+    BLuk = text.get_rect(midtop= (600,50))
+    screen.blit(text, BLuk)
 
     pygame.display.update()
     clock.tick(30)
