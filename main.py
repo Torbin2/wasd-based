@@ -5,7 +5,7 @@ from random import randint
 pygame.init()
 
 screen = pygame.display.set_mode((1200,600))
-pygame.display.set_caption("bullet based")
+pygame.display.set_caption("wasd based")
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
 scuffed_timer = 0
@@ -146,23 +146,29 @@ class Enemy():
             self.speed = 5
             self.radius = 20
             
-            img_1 = pygame.transform.scale(pygame.image.load("graphics/slimes/slime_1.png").convert_alpha(),(40,40))
-            img_2 = pygame.transform.scale(pygame.image.load("graphics/slimes/slime_2.png").convert_alpha(),(40,40))
+            img_1 = pygame.transform.scale(pygame.image.load("graphics/slimes/slime_1.png").convert_alpha(),(50,50))
+            img_2 = pygame.transform.scale(pygame.image.load("graphics/slimes/slime_2.png").convert_alpha(),(50,50))
             self.frames = [img_1,img_2]
             self.img = self.frames[0]
         #fast
         if type == 2:
             self.speed = 10
-            self.colour = ("#743959")
+            img_1 = pygame.transform.scale(pygame.image.load("graphics/fast slime/1.png").convert_alpha(),(60,60))
+            img_2 = pygame.transform.scale(pygame.image.load("graphics/fast slime/2.png").convert_alpha(),(60,60))
+            self.frames = [img_1,img_2]
+            self.img = self.frames[0]
             self.radius = 12
         #big
         if type == 3:
             self.speed = 3
             self.radius = 40
-            self.img = pygame.transform.scale(pygame.image.load("graphics/slimes/big_slime.png").convert_alpha(),(80,80))
-      
+            #big_slime created by Hugo on github
+            img_1 = pygame.transform.scale(pygame.image.load("graphics/big_slime.png").convert_alpha(),(80,80))
+            self.frames = [img_1]
+            self.img = self.frames[0]
+        
         self.frame = 0
-        self.rect = pygame.Rect(0, 0, self.radius*2, self.radius*2)
+        self.rect = self.img.get_rect()
         self.rect.center = pos
 
     def movement(self):
@@ -201,11 +207,8 @@ class Enemy():
         else: return False
                    
     def draw(self):
-        if self.type == 1 or self.type ==3:
-            screen.blit(self.img, self.rect)
-        else:
-            pygame.draw.circle(screen,self.colour,self.rect.center,self.radius)   
-    
+        screen.blit(self.img, self.rect)
+           
     def animation(self):
         self.frame += 0.1
         if self.frame >= len(self.frames):
@@ -219,7 +222,7 @@ class Enemy():
         self.movement()
         #self.colision()
         self.draw()
-        if self.type == 1:
+        if self.type == 1 or 2:
             self.animation()
 
 def create_enemy():
