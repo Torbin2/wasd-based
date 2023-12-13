@@ -21,7 +21,6 @@ death = False
 bullets = []
 enemies = []
 
-
 class player():
     def __init__(self):
         self.player_rect = pygame.Rect(200,200,10,10)
@@ -31,9 +30,14 @@ class player():
         self.atacking_frames =0
         self.colour = ("#9ac963")
         self.direction = 1
+        
+        self.bombing = False
+        self.bomb_time = 0
+        self.bomb_rect = pygame.Rect(0,0,0,0)
     def input(self):
+        global energie
         keys = pygame.key.get_pressed()        
-     
+
         if keys[pygame.K_d]:
             self.x_speed +=0.6
             self.direction=3
@@ -53,6 +57,10 @@ class player():
 
         if keys[pygame.K_RSHIFT] and not self.atacking:
             self.atacking = True
+        
+        if keys[pygame.K_BACKSLASH] and energie >= 400 and self.bombing == False:
+            self.bombing = True
+            energie -=400
 
         #adding bullets is in the event menu
         
@@ -92,9 +100,9 @@ class player():
             elif self.direction == 4:
                 weopon_rect.topleft = self.player_rect.bottomright
             elif self.direction == 5:
-                weopon_rect.midtop == self.player_rect.midbottom
+                weopon_rect.midtop = self.player_rect.midbottom
             elif self.direction == 6:
-                weopon_rect.topright == self.player_rect.bottomleft
+                weopon_rect.topright = self.player_rect.bottomleft
             elif self.direction == 7:
                 weopon_rect.midright = self.player_rect.midleft
             elif self.direction == 8:
@@ -106,7 +114,17 @@ class player():
             if self.atacking_frames >= 45:
                 self.atacking_frames = 0
                 self.colour = ("#9ac963")
-                self.atacking = False           
+                self.atacking = False 
+
+        if self.bombing:
+            if self.bomb_time == 0:
+                self.bomb_pos = self.player_rect.center
+            self.bomb_time += 1
+            self.bomb_rect.size = (self.bomb_time,self.bomb_time)
+            self.bomb_rect.center = self.bomb_pos
+            
+            pygame.draw.circle(screen,('blue'),self.bomb_rect.center,self.bomb_time,2)
+
     def draw(self):
         pygame.draw.rect(screen,self.colour,self.player_rect)
         if self.atacking:
@@ -126,8 +144,12 @@ class Enemy():
         self.type = type
         if type == 1:
             self.speed = 5
-            self.colour = ("#395974")
-            self.radius = 10
+            self.radius = 20
+            
+            img_1 = pygame.transform.scale(pygame.image.load("graphics/slimes/slime_1.png").convert_alpha(),(40,40))
+            img_2 = pygame.transform.scale(pygame.image.load("graphics/slimes/slime_2.png").convert_alpha(),(40,40))
+            self.frames = [img_1,img_2]
+            self.img = self.frames[0]
         #fast
         if type == 2:
             self.speed = 10
@@ -136,9 +158,10 @@ class Enemy():
         #big
         if type == 3:
             self.speed = 3
-            self.colour = ("#395974")
-            self.radius = 20
-
+            self.radius = 40
+            self.img = pygame.transform.scale(pygame.image.load("graphics/slimes/big_slime.png").convert_alpha(),(80,80))
+      
+        self.frame = 0
         self.rect = pygame.Rect(0, 0, self.radius*2, self.radius*2)
         self.rect.center = pos
 
@@ -178,11 +201,26 @@ class Enemy():
         else: return False
                    
     def draw(self):
-        pygame.draw.circle(screen,self.colour,self.rect.center,self.radius)   
+        if self.type == 1 or self.type ==3:
+            screen.blit(self.img, self.rect)
+        else:
+            pygame.draw.circle(screen,self.colour,self.rect.center,self.radius)   
+    
+    def animation(self):
+        self.frame += 0.1
+        if self.frame >= len(self.frames):
+            self.frame = 0
+        self.img = self.frames[int(self.frame)]
+        
+        
+
     def update(self):
+        
         self.movement()
         #self.colision()
         self.draw()
+        if self.type == 1:
+            self.animation()
 
 def create_enemy():
     random = randint(1,4)
@@ -271,11 +309,14 @@ class Bullet():
      
 def energie_logic():
     global energie
+    colour = "#824464"
     if energie <300:
         energie +=1
+    if energie >=400:
+        colour = "#447d82"
     energie_bar.width = energie
     energie_bar.bottomright = (1180,580)
-    pygame.draw.rect(screen,("#824464"),energie_bar,7,8)
+    pygame.draw.rect(screen,colour,energie_bar,7,8)
 
 def points_distrubution(sort):
     global points
@@ -336,6 +377,9 @@ while True:
         
         enemies = []
         bullets = []
+
+        player_class.atacking = False
+        player_class.atacking_frames = 0
 
         text = font.render("press space",True, ("black"))
         BLuk = text.get_rect(midtop= (600,450))
