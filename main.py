@@ -148,14 +148,19 @@ class Enemy():
             
             img_1 = pygame.transform.scale(pygame.image.load("graphics/slimes/slime_1.png").convert_alpha(),(50,50))
             img_2 = pygame.transform.scale(pygame.image.load("graphics/slimes/slime_2.png").convert_alpha(),(50,50))
-            self.frames = [img_1,img_2]
+            self.normal_frames = [img_1,img_2]
+            self.flipped_frames = [pygame.transform.flip(img_1,True,False),pygame.transform.flip(img_2,True,False)]
+            self.frames = self.normal_frames
             self.img = self.frames[0]
         #fast
         if type == 2:
-            self.speed = 10
+            self.speed = 7
             img_1 = pygame.transform.scale(pygame.image.load("graphics/fast slime/1.png").convert_alpha(),(60,60))
             img_2 = pygame.transform.scale(pygame.image.load("graphics/fast slime/2.png").convert_alpha(),(60,60))
-            self.frames = [img_1,img_2]
+            
+            self.normal_frames = [img_1,img_2]
+            self.flipped_frames = [pygame.transform.flip(img_1,True,False),pygame.transform.flip(img_2,True,False)]
+            self.frames = self.normal_frames
             self.img = self.frames[0]
             self.radius = 12
         #big
@@ -164,7 +169,11 @@ class Enemy():
             self.radius = 40
             #big_slime created by Hugo on github
             img_1 = pygame.transform.scale(pygame.image.load("graphics/big_slime.png").convert_alpha(),(80,80))
-            self.frames = [img_1]
+            
+            self.normal_frames = [img_1]
+            self.flipped_frames = [pygame.transform.flip(img_1,True,False)]
+            
+            self.frames = self.normal_frames
             self.img = self.frames[0]
         
         self.frame = 0
@@ -173,10 +182,18 @@ class Enemy():
 
     def movement(self):
         self.pos_to_player()
-        if self.y_delta >0: self.rect.y += self.y_speed
-        else: self.rect.y -= self.y_speed
-        if self.x_delta >0: self.rect.x += self.x_speed
-        else: self.rect.x -= self.x_speed
+        if self.y_delta >0: 
+            self.rect.y += self.y_speed
+            self.frames = self.normal_frames
+        else: 
+            self.rect.y -= self.y_speed
+            self.frames = self.flipped_frames
+        if self.x_delta >0:
+            self.rect.x += self.x_speed
+            self.frames = self.normal_frames
+        else: 
+            self.rect.x -= self.x_speed
+            self.frames = self.flipped_frames
     
     def pos_to_player(self):
         self.y_delta = player_class.player_rect.centery - self.rect.centery
@@ -222,11 +239,10 @@ class Enemy():
         self.movement()
         #self.colision()
         self.draw()
-        if self.type == 1 or 2:
-            self.animation()
+        self.animation()
 
 def create_enemy():
-    random = randint(1,4)
+    random = randint(1,6)
     pos =[0,0]
     
     if randint(1,2) == 1:
@@ -258,8 +274,8 @@ class Bullet():
             self.diagonal = True
         
         if self.diagonal:
-            self.hitbox_1 = pygame.Rect(0,0,55,40)
-            self.hitbox_2 = pygame.Rect(0,0,55,40)
+            self.hitbox_1 = pygame.Rect(0,0,40,40)
+            self.hitbox_2 = pygame.Rect(0,0,40,40)
 
 
         img = pygame.image.load("graphics/laser.png").convert_alpha()
@@ -349,7 +365,7 @@ while True:
         screen.fill(("#597439"))
         scuffed_timer +=1
         
-        if scuffed_timer == 30:
+        if scuffed_timer == 20:
             create_enemy()
             scuffed_timer = 0
         
