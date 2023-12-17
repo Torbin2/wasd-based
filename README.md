@@ -2,5 +2,6 @@
 
 4 keys to move
 
-`shift` to attack
-`enter` to shoot
+`shift` to attack\
+`enter` to shoot\
+`slash` to bomb
