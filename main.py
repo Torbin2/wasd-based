@@ -105,7 +105,7 @@ class Player:
         if self.x_speed < 0: self.x_speed += 0.2
         if self.y_speed < 0: self.y_speed += 0.2
 
-    def weopon_logic(self):
+    def weapon_logic(self):
 
         global weapon_rect
 
@@ -155,10 +155,7 @@ class Player:
                 self.bomb_time = 0
 
             for e in enemies:
-
-                e: Enemy # TODO: fix weird collisions
-
-                if collidebomb(e.rect.left, e.rect.top, e.rect.width, e.rect.height, self.bomb_rect.centerx, self.bomb_rect.centery, self.bomb_time):
+                if collidebomb(e.rect, self.bomb_rect, self.bomb_time):
                     enemies.remove(e)
                     points_distribution(e.type)
 
@@ -173,7 +170,7 @@ class Player:
         self.input()
         self.movement()
         self.side_colisions()
-        self.weopon_logic()
+        self.weapon_logic()
         self.draw()
 
 
@@ -268,6 +265,7 @@ class Enemy:
 
     def collision(self):
         global death
+
         if self.rect.colliderect(player.player_rect):
             death = True
 
@@ -423,26 +421,10 @@ def points_distribution(sort: int):
     elif sort == 3:
         points += 2
 
-def collidebomb(rleft, rtop, width, height,
-              center_x, center_y, radius):
+def collidebomb(rect: pygame.Rect, circle: pygame.Rect, radius):
 
-    rright, rbottom = rleft + width / 2, rtop + height / 2
-
-    cleft, ctop = center_x - radius, center_y - radius
-    cright, cbottom = center_x + radius, center_y + radius
-
-    if rright < cleft or rleft > cright or rbottom < ctop or rtop > cbottom:
-        return False
-
-    for x in (rleft, rleft + width):
-        for y in (rtop, rtop + height):
-            if math.hypot(x - center_x, y - center_y) <= radius:
-                return True
-
-    if rleft <= center_x <= rright and rtop <= center_y <= rbottom:
-        return True
-
-    return False
+    dist = math.sqrt((rect.centerx - circle.centerx) ** 2 + (rect.centery - circle.centery) ** 2)
+    return dist < rect.width / 2 + radius
 
 while 1:
     for event in pygame.event.get():
