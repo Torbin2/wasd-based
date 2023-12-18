@@ -1,8 +1,19 @@
 import math
-
+import random
 import pygame
 from sys import exit
-from random import randint
+
+import tas
+
+s = random.randint(1, 99999999999999999)
+
+t = tas.TASHandler()
+
+if t.mode == "write" and t.movie.seed == 0:
+    t.movie.set_seed(s)
+
+t.init_movie()
+random.seed(t.movie.seed)
 
 pygame.init()
 
@@ -45,15 +56,15 @@ class Player:
         global energy
         keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_d]:
+        if (keys[pygame.K_d] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].d):
             self.x_speed += 0.6
             self.direction = 3
 
-        if keys[pygame.K_a]:
+        if (keys[pygame.K_a] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].a):
             self.x_speed -= 0.6
             self.direction = 7
 
-        if keys[pygame.K_s]:
+        if (keys[pygame.K_s] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].s):
             self.y_speed += 0.6
             if self.direction == 3:
                 self.direction = 4
@@ -62,7 +73,7 @@ class Player:
             else:
                 self.direction = 5
 
-        if keys[pygame.K_w]:
+        if (keys[pygame.K_w] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].w):
             self.y_speed -= 0.6
             if self.direction == 3:
                 self.direction = 2
@@ -71,14 +82,18 @@ class Player:
             else:
                 self.direction = 1
 
-        if keys[pygame.K_RSHIFT] and not self.attacking:
+        if ((keys[pygame.K_RSHIFT] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].b)) and not self.attacking:
             self.attacking = True
 
-        if keys[pygame.K_SLASH] and energy >= 400 and not self.bombing:
+        if ((keys[pygame.K_SLASH] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].e)) and energy >= 400 and not self.bombing:
             self.bombing = True
             energy -= 400
 
         # adding bullets is in the event menu
+
+        t.handle_input(keys)
+        t.frame += 1
+
 
     def side_colisions(self):
 
@@ -293,26 +308,26 @@ class Enemy:
 
 
 def create_enemy():
-    random = randint(1, 6)
+    r = random.randint(1, 6)
     pos = [0, 0]
 
-    if randint(1, 2) == 1:
-        pos[0] = randint(0, 1200)
-        if randint(1, 2) == 1:
+    if random.randint(1, 2) == 1:
+        pos[0] = random.randint(0, 1200)
+        if random.randint(1, 2) == 1:
             pos[1] = 0
         else:
             pos[1] = 600
     else:
-        pos[1] = randint(0, 600)
-        if randint(1, 2) == 1:
+        pos[1] = random.randint(0, 600)
+        if random.randint(1, 2) == 1:
             pos[0] = 0
         else:
             pos[0] = 1200
 
     enemy = 1
-    if random == 1:
+    if r == 1:
         enemy = 2
-    elif random == 2:
+    elif r == 2:
         enemy = 3
     enemies.append(Enemy(enemy, tuple(pos)))
 
