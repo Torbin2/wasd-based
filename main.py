@@ -28,7 +28,7 @@ class Player:
     
     def __init__(self):
 
-        self.player_rect = pygame.Rect(200, 200, 10, 10)
+        self.player_rect = pygame.Rect(200, 200, 15, 15)
         self.x_speed = 0
         self.y_speed = 0
         self.attacking = False
@@ -41,44 +41,55 @@ class Player:
         self.bomb_rect = pygame.Rect(0, 0, 0, 0)
 
     def input(self):
-
+        maxspeed = 6
         global energy
         keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_d]:
-            self.x_speed += 0.6
+        if keys[pygame.K_d] and self.x_speed < maxspeed:
+            self.x_speed += 1
             self.direction = 3
 
-        if keys[pygame.K_a]:
-            self.x_speed -= 0.6
+        if keys[pygame.K_a] and abs(self.x_speed) < maxspeed:
+            self.x_speed -= 1
             self.direction = 7
 
-        if keys[pygame.K_s]:
-            self.y_speed += 0.6
+        if keys[pygame.K_s] and abs(self.y_speed) < maxspeed:
+            self.y_speed += 1
             if self.direction == 3:
                 self.direction = 4
+                #normalizing diagonals
+                self.y_speed -0.5
+                self.x_speed -0.5
             elif self.direction == 7:
                 self.direction = 6
+                #normalizing diagonals
+                self.y_speed -0.5
+                self.x_speed +0.5
             else:
                 self.direction = 5
 
-        if keys[pygame.K_w]:
-            self.y_speed -= 0.6
+        if keys[pygame.K_w] and abs(self.y_speed) < maxspeed:
+            self.y_speed -= 1
             if self.direction == 3:
                 self.direction = 2
+                #normalizing diagonals
+                self.y_speed +0.5
+                self.x_speed -0.5
             elif self.direction == 7:
                 self.direction = 8
+                #normalizing diagonals
+                self.y_speed +0.5
+                self.x_speed +0.5
             else:
                 self.direction = 1
 
-        if keys[pygame.K_RSHIFT] and not self.attacking:
-            self.attacking = True
+
 
         if keys[pygame.K_SLASH] and energy >= 400 and not self.bombing:
             self.bombing = True
             energy -= 400
 
-        # adding bullets is in the event menu
+        # adding bullets and atacking is in the event menu
 
     def side_colisions(self):
 
@@ -100,10 +111,10 @@ class Player:
         self.player_rect.x += self.x_speed
         self.player_rect.y += self.y_speed
 
-        if self.x_speed > 0: self.x_speed -= 0.2
-        if self.y_speed > 0: self.y_speed -= 0.2
-        if self.x_speed < 0: self.x_speed += 0.2
-        if self.y_speed < 0: self.y_speed += 0.2
+        if self.x_speed > 0: self.x_speed -= 0.5
+        if self.y_speed > 0: self.y_speed -= 0.5
+        if self.x_speed < 0: self.x_speed += 0.5
+        if self.y_speed < 0: self.y_speed += 0.5
 
     def weapon_logic(self):
 
@@ -112,11 +123,11 @@ class Player:
         if self.attacking:
             self.attacking_frames += 1
 
-        if self.attacking and self.attacking_frames <= 40:
+        if self.attacking and self.attacking_frames <= 3:
             if self.direction == 1:
                 weapon_rect.midbottom = self.player_rect.midtop
             elif self.direction == 2:
-                weapon_rect.bottomleft = self.player_rect.topright
+                weapon_rect.bottomleft = self.player_rect.topright 
             elif self.direction == 3:
                 weapon_rect.midleft = self.player_rect.midright
             elif self.direction == 4:
@@ -136,7 +147,7 @@ class Player:
 
             weapon_rect.center = -200, -200
 
-            if self.attacking_frames >= 45:
+            if self.attacking_frames >= 4:
                 self.attacking_frames = 0
                 self.colour = "#9ac963"
                 self.attacking = False
@@ -426,7 +437,7 @@ def collidebomb(rect: pygame.Rect, circle: pygame.Rect, radius):
     dist = math.sqrt((rect.centerx - circle.centerx) ** 2 + (rect.centery - circle.centery) ** 2)
     return dist < rect.width / 2 + radius
 
-while 1:
+while True :
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -437,6 +448,8 @@ while 1:
                 if event.key == pygame.K_RETURN and energy >= 25:
                     bullets.append(Bullet(player.direction))
                     energy -= 50
+                if event.key == pygame.K_RSHIFT and not player.attacking:
+                    player.attacking = True
             if death:
                 if event.key == pygame.K_SPACE:
                     death = False
@@ -478,6 +491,7 @@ while 1:
 
         player.attacking = False
         player.attacking_frames = 0
+        energy = 300
 
         text = font.render("press space", True, "black")
         BLuk = text.get_rect(midtop=(600, 450))
