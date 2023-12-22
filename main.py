@@ -11,6 +11,7 @@ t = tas.TASHandler()
 
 if t.mode == "write" and t.movie.seed == 0:
     t.movie.set_seed(s)
+    t.frame_advance = True
 
 t.init_movie()
 random.seed(t.movie.seed)
@@ -56,15 +57,19 @@ class Player:
         global energy
         keys = pygame.key.get_pressed()
 
-        if (keys[pygame.K_d] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].d):
+        # check if savestate has been finished
+        # try: _ = t.movie.inputs[t.frame] if t.mode == "read" else None
+        # except IndexError: t.mode = "finished"
+
+        if (keys[pygame.K_d] and t.can_accept_input_default()) or (t.mode == "read" and t.movie.inputs[t.frame].d) or (t.loading_savestate and t.movie.inputs[t.frame].d):
             self.x_speed += 0.6
             self.direction = 3
 
-        if (keys[pygame.K_a] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].a):
+        if (keys[pygame.K_a] and t.can_accept_input_default()) or (t.mode == "read" and t.movie.inputs[t.frame].a or (t.loading_savestate and t.movie.inputs[t.frame].a)):
             self.x_speed -= 0.6
             self.direction = 7
 
-        if (keys[pygame.K_s] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].s):
+        if (keys[pygame.K_s] and t.can_accept_input_default()) or (t.mode == "read" and t.movie.inputs[t.frame].s) or (t.loading_savestate and t.movie.inputs[t.frame].s):
             self.y_speed += 0.6
             if self.direction == 3:
                 self.direction = 4
@@ -73,7 +78,7 @@ class Player:
             else:
                 self.direction = 5
 
-        if (keys[pygame.K_w] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].w):
+        if (keys[pygame.K_w] and t.can_accept_input_default()) or (t.mode == "read" and t.movie.inputs[t.frame].w) or (t.loading_savestate and t.movie.inputs[t.frame].w):
             self.y_speed -= 0.6
             if self.direction == 3:
                 self.direction = 2
@@ -82,14 +87,19 @@ class Player:
             else:
                 self.direction = 1
 
-        if ((keys[pygame.K_RSHIFT] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].b)) and not self.attacking:
+        if ((keys[pygame.K_RSHIFT] and t.can_accept_input_default()) or (t.mode == "read" and t.movie.inputs[t.frame].b) or (t.loading_savestate and t.movie.inputs[t.frame].b)) and not self.attacking:
             self.attacking = True
 
-        if ((keys[pygame.K_SLASH] and t.can_accept_input()) or (t.mode == "read" and t.movie.inputs[t.frame].e)) and energy >= 400 and not self.bombing:
+        if ((keys[pygame.K_SLASH] and t.can_accept_input_default()) or (t.mode == "read" and t.movie.inputs[t.frame].e) or (t.loading_savestate and t.movie.inputs[t.frame].e)) and energy >= 400 and not self.bombing:
             self.bombing = True
             energy -= 400
 
         # adding bullets is in the event menu
+        if ((t.can_accept_input_default() and t.may_fire_keydown_event("l") and keys[pygame.K_RETURN])
+            or (t.may_fire_keydown_event("l") and t.loading_savestate and t.movie.inputs[t.frame].l)
+            or (t.mode == "read" and t.may_fire_keydown_event("l") and t.movie.inputs[t.frame].l)) and energy >= 25:
+            bullets.append(Bullet(player.direction))
+            energy -= 50
 
         t.handle_input(keys)
         t.frame += 1
@@ -441,21 +451,105 @@ def collidebomb(rect: pygame.Rect, circle: pygame.Rect, radius):
     dist = math.sqrt((rect.centerx - circle.centerx) ** 2 + (rect.centery - circle.centery) ** 2)
     return dist < rect.width / 2 + radius
 
-while 1:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
+def reinitialize():
 
-        if event.type == pygame.KEYDOWN:
-            if not death:
-                if event.key == pygame.K_RETURN and energy >= 25:
-                    bullets.append(Bullet(player.direction))
-                    energy -= 50
-            if death:
-                if event.key == pygame.K_SPACE:
-                    death = False
-                    points = 0
+    global scuffed_timer, energy, points, energy_bar, weapon_rect, death, bullets, enemies, player
+
+    random.seed(t.movie.seed)
+
+    scuffed_timer = 0
+
+    energy = 300
+    points = 0
+
+    energy_bar = pygame.Rect(0, -0, energy, 30)
+    weapon_rect = pygame.Rect(-100, -100, 50, 50)
+
+    death = False
+
+    bullets = []
+    enemies = []
+
+    player = Player()
+
+def load_state(slot: int):
+
+    if t.mode != "write":
+        print("You can't load savestate in read mode!")
+        return
+
+    res = t.movie.parse_lines_of_savestate(slot)
+
+    if res is None:
+        print("Empty savestate received.")
+        return
+
+    print("Loading...")
+
+    t.frame = 0
+    t.clock_speed = 15
+    reinitialize()
+    t.loading_savestate = True
+
+
+events = []
+
+while 1:
+
+    if t.frame_advance:
+
+        event = pygame.event.wait()
+
+        while not (event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT):
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
+                t.frame_advance = False
+                break
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_u:
+                t.movie.write_savestate(0)
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_7:
+                load_state(0)
+                break
+
+            events.append(event)
+
+            if event.type == pygame.QUIT:
+                break
+
+            event = pygame.event.wait()
+
+    if t.physics:
+
+        for event in events + pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                t.finish_movie()
+                pygame.quit()
+                exit()
+
+            if event.type == pygame.KEYDOWN:
+
+                if event.key == pygame.K_UP:
+                    t.frame_advance = True
+
+                if death:
+                    if (event.key == pygame.K_RETURN and t.can_accept_input_default()) and energy >= 25:
+                        bullets.append(Bullet(player.direction))
+                        energy -= 50
+                else:
+                    if event.key == pygame.K_SPACE:
+                        death = False
+                        points = 0
+
+        events = []
+
+    # if not death:
+    #     if ((t.can_accept_input_default() and t.keydown("l")) or (t.mode == "read" and t.keydown("l"))) and energy >= 25:
+    #         bullets.append(Bullet(player.direction))
+    #         energy -= 50
+
     if not death:
         screen.fill("#597439")
         scuffed_timer += 1
@@ -486,6 +580,7 @@ while 1:
         energy_logic()
 
     if death:
+
         screen.fill("#0d8779")
 
         enemies = []
@@ -503,5 +598,8 @@ while 1:
     BLuk = text.get_rect(midtop=(600, 50))
     screen.blit(text, BLuk)
 
+    # if not t.loading_savestate:
     pygame.display.update()
-    clock.tick(30)
+
+    clock.tick(t.clock_speed)
+    print(t.frame_advance)

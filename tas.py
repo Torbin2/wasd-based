@@ -36,7 +36,7 @@ class Input:
                 f"{'D' if self.d else '.'}"
                 f"{'B' if self.b else '.'}"
                 f"{'L' if self.l else '.'}"
-                f"{'E' if self.e else '.'}\n")
+                f"{'E' if self.e else '.'}")
 
 class TASHandler:
 
@@ -46,7 +46,8 @@ class TASHandler:
         self.frame = 0
         self.frame_advance = False
         self.loading_savestate = False
-        self.clock_speed = 60
+        self.default_clock_speed = 30
+        self.clock_speed = self.default_clock_speed
         self.physics = True
 
         with open("tasconfig.txt", "r") as f:
@@ -59,6 +60,10 @@ class TASHandler:
             self.frame_advance = False
             self.movie.read_inputs()
 
+    def finish_movie(self):
+        if self.mode == "write":
+            self.movie.write_end()
+
     def handle_input(self, keys):
 
         if self.mode == "write":
@@ -68,11 +73,15 @@ class TASHandler:
                 self.frame_advance = False
 
                 if self.frame >= self.movie.inputs.__len__() - 1:
-                    self.clock_speed = 30
+                    self.clock_speed = self.default_clock_speed
                     self.frame_advance = True
                     self.loading_savestate = False
 
+                    print("ong", self.frame)
+
                     self.frame += 1
+
+                    print("adding", self.frame)
                     return
             else:
                 self.movie.write_input([keys[pygame.K_w],
@@ -83,8 +92,20 @@ class TASHandler:
                                         keys[pygame.K_RETURN],
                                         keys[pygame.K_SLASH]])
 
-    def can_accept_input(self):
+    def can_accept_input_default(self) -> bool:
         return self.mode == "write" and not self.loading_savestate
+
+    def may_fire_keydown_event(self, key: str) -> bool:
+
+        print("Check at frame", self.frame, "actual movie len", self.movie.inputs.__len__())
+
+        if self.movie.inputs is None:
+            return False
+
+        if self.frame <= 0:
+            return False
+
+        return not eval(f"self.movie.inputs[self.frame - 1].{key.lower()}")
 
 class TASMovie:
 
@@ -279,6 +300,8 @@ class TASMovie:
 
                     if slot == 0:
                         self.studio = self.inputs
+
+                    print("LEN:", inputs.__len__())
 
                     return inputs
                 else:
