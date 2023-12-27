@@ -61,6 +61,8 @@ class Player:
         # try: _ = t.movie.inputs[t.frame] if t.mode == "read" else None
         # except IndexError: t.mode = "finished"
 
+        t.handle_input(keys)
+
         if (keys[pygame.K_d] and t.can_accept_input_default()) or (t.mode == "read" and t.movie.inputs[t.frame].d) or (t.loading_savestate and t.movie.inputs[t.frame].d):
             self.x_speed += 0.6
             self.direction = 3
@@ -101,7 +103,6 @@ class Player:
             bullets.append(Bullet(player.direction))
             energy -= 50
 
-        t.handle_input(keys)
         t.frame += 1
 
 
